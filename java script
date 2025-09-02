@@ -1,0 +1,57 @@
+// مكتبة للتحويل من Lat/Lon إلى UTM
+// (لو عايز دقة أكتر ممكن تضيف مكتبات زي proj4js)
+function latLonToUTM(lat, lon) {
+  // حساب المنطقة (zone)
+  let zone = Math.floor((lon + 180) / 6) + 1;
+
+  // المعادلة مبسطة - للتجربة فقط
+  let easting = (lon + 180) * 500;
+  let northing = (lat + 90) * 1000;
+
+  return {
+    zone: zone,
+    easting: easting.toFixed(3),
+    northing: northing.toFixed(3)
+  };
+}
+
+// زر الإدخال اليدوي
+document.getElementById("convertBtn").addEventListener("click", () => {
+  let lat = parseFloat(document.getElementById("latitude").value);
+  let lon = parseFloat(document.getElementById("longitude").value);
+
+  if (isNaN(lat) || isNaN(lon)) {
+    document.getElementById("result").innerHTML = "❌ من فضلك أدخل قيم صحيحة";
+    return;
+  }
+
+  let utm = latLonToUTM(lat, lon);
+  document.getElementById("result").innerHTML =
+    ✅ Zone: ${utm.zone}<br>East: ${utm.easting}<br>North: ${utm.northing};
+});
+
+// زر رفع الملف (KML أو KMZ)
+document.getElementById("fileInput").addEventListener("change", (event) => {
+  let file = event.target.files[0];
+  if (!file) return;
+
+  let reader = new FileReader();
+  reader.onload = function(e) {
+    let text = e.target.result;
+
+    // استخراج إحداثيات من ملف KML (بشكل مبسط)
+    let matches = text.match(/<coordinates>(.*?)<\/coordinates>/);
+    if (matches && matches[1]) {
+      let coords = matches[1].trim().split(",");
+      let lon = parseFloat(coords[0]);
+      let lat = parseFloat(coords[1]);
+
+      let utm = latLonToUTM(lat, lon);
+      document.getElementById("result").innerHTML =
+        ✅ Zone: ${utm.zone}<br>East: ${utm.easting}<br>North: ${utm.northing};
+    } else {
+      document.getElementById("result").innerHTML = "❌ لم أستطع قراءة الإحداثيات من الملف";
+    }
+  };
+  reader.readAsText(file);
+});

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Convert kml kmz to UTM</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: auto;
+    }
+    input, select, button {
+      margin: 8px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    button {
+      background: #0066cc;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #004c99;
+    }
+    footer {
+      margin-top: 40px;
+      padding: 20px;
+      background: #f1f1f1;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 15px;
+      color: #333;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    footer a {
+      color: #0066cc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    footer .whatsapp {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 10px 20px;
+      background: #25D366;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/proj4/dist/proj4.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Convert kml kmz to UTM</h1>
+
+    <h3>إدخال يدوي</h3>
+    <input type="number" id="lat" placeholder="خط العرض (Latitude)">
+    <input type="number" id="lon" placeholder="خط الطول (Longitude)">
+    
+    <select id="zone">
+      <option value="">اختر زون</option>
+      <!-- توليد كل الزونات 1 → 60 -->
+      <script>
+        for (let i=1; i<=60; i++) {
+          document.write(<option value="${i}">Zone ${i}</option>);
+        }
+      </script>
+    </select>
+    <button onclick="convertManual()">تحويل</button>
+
+    <h3>رفع ملف KML/KMZ</h3>
+    <input type="file" id="fileInput" accept=".kml,.kmz">
+    <button onclick="convertFile()">تحويل الملف</button>
+
+    <div id="output" style="margin-top:20px; font-weight:bold;"></div>
+  </div>
+
+  <!-- الفوتر الشخصي -->
+  <footer>
+    <p>✦ تم الإنشاء بواسطة ✦</p>
+    <p>📧 <a href="mailto:abdelfattahahmed111@gmail.com">abdelfattahahmed111@gmail.com</a></p>
+    <p>📞 <a href="tel:01099706499">01099706499</a></p>
+    <p><a href="https://wa.me/201099706499" target="_blank" class="whatsapp">تواصل عبر واتساب</a></p>
+  </footer>
+
+  <script>
+    function convertManual() {
+      const lat = parseFloat(document.getElementById("lat").value);
+      const lon = parseFloat(document.getElementById("lon").value);
+      const zone = document.getElementById("zone").value;
+
+      if (isNaN(lat) || isNaN(lon) || !zone) {
+        document.getElementById("output").innerText = "⚠ من فضلك أدخل القيم واختر الزون.";
+        return;
+      }
+
+      const utmProj = +proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs;
+      const utm = proj4(utmProj, [lon, lat]);
+      document.getElementById("output").innerText =
+        ✅ UTM: X = ${utm[0].toFixed(3)}, Y = ${utm[1].toFixed(3)}, Zone ${zone};
+    }
+
+    function convertFile() {
+      const file = document.getElementById("fileInput").files[0];
+      const zone = document.getElementById("zone").value;
+
+      if (!file || !zone) {
+        document.getElementById("output").innerText = "⚠ من فضلك اختر ملف وحدد الزون.";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const regex = /<coordinates>(.*?)<\/coordinates>/g;
+        let match, results = [];
+        const utmProj = +proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs;
+
+        while ((match = regex.exec(text)) !== null) {
+          const coords = match[1].trim().split(" ");
+          coords.forEach(pair => {
+            if (pair) {
+              const [lon, lat] = pair.split(",").map(Number);
+              const utm = proj4(utmProj, [lon, lat]);
+              results.push(X=${utm[0].toFixed(3)}, Y=${utm[1].toFixed(3)});
+            }
+          });
+        }
+        document.getElementById("output").innerText = "✅ النتائج:\n" + results.join("\n");
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
